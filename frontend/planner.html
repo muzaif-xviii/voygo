@@ -1,0 +1,113 @@
+<!doctype html><html><head><meta charset="utf-8"/><title>AI Planner — VoyGo</title><link rel="stylesheet" href="css/styles.css"/><script src="js/main.js" defer></script><script src="js/planner.js" defer></script></head>
+<body>
+<div class="container">
+  <header class="header">
+  <a class="brand" href="index.html">
+    <div class="logo">V</div>
+    <div>
+      <strong>VoyGo</strong>
+      <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
+    </div>
+  </a>
+  <nav class="nav"></nav>
+</header>
+
+  <div class="card">
+    <h3>AI Trip Planner (Premium)</h3>
+    <p style="color:var(--muted)">Premium users: create automatic plans and allow VoyGo to book on approval.</p>
+    <form onsubmit="event.preventDefault(); plan()">
+      <div class="form-row"><input class="input" name="destination" id="dest" placeholder="Destination" required></div>
+      <div class="form-row" style="margin-top:8px"><input class="input" name="start" type="date" required><input class="input" name="end" type="date"></div>
+      <div class="form-row" style="margin-top:8px"><input class="input" name="budget" placeholder="Budget (₹)" type="number"></div>
+      <div style="margin-top:12px"><button class="btn">Get Plan</button></div>
+    </form>
+    <div id="plan-result" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<script>
+async function plan() {
+  if (!getToken()) {
+    showToast("Login to use planner", "error");
+    location = "login.html";
+    return;
+  }
+
+  const dest = document.getElementById("dest").value;
+  const start = document.querySelector('input[name="start"]').value;
+  const end = document.querySelector('input[name="end"]').value;
+  const budget = document.querySelector('input[name="budget"]').value;
+
+  document.getElementById("plan-result").textContent = "Creating plan...";
+
+  try {
+    const res = await fetch("/api/planner/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + getToken(),
+      },
+      body: JSON.stringify({ destination: dest, start, end, budget }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      document.getElementById("plan-result").textContent =
+        data.error || "Error creating plan.";
+      return;
+    }
+
+    // 🧠 Flexible display for both AI text & JSON plan
+    let content = "";
+    if (typeof data.plan === "string") {
+      // If AI text
+      content = `<pre style="white-space:pre-wrap;font-family:inherit;">${data.plan}</pre>`;
+    } else if (data.plan.steps) {
+      // If JSON plan
+      const steps = data.plan.steps
+        .map((s) => `<li><strong>Day ${s.day}:</strong> ${s.action}</li>`)
+        .join("");
+      content = `
+        <h4>${data.plan.summary}</h4>
+        <ul>${steps}</ul>
+        <p><strong>Estimated cost:</strong> ₹${data.plan.estimated_cost}</p>
+      `;
+    } else {
+      content = `<pre>${JSON.stringify(data.plan, null, 2)}</pre>`;
+    }
+
+    document.getElementById("plan-result").innerHTML = `
+      <div class="card">
+        <h4>Suggested Plan for ${dest}</h4>
+        ${content}
+        <div style="margin-top:8px">
+          <button class="btn" onclick="confirmAuto('${data.planId}')">
+            Allow Auto-book (demo)
+          </button>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error("Planner error:", err);
+    document.getElementById("plan-result").textContent =
+      "Error connecting to planner.";
+  }
+}
+
+async function confirmAuto(planId) {
+  if (
+    !confirm(
+      "Allow VoyGo to automatically book the items in this plan? VoyGo will ask for approval before each booking."
+    )
+  )
+    return;
+
+  const res = await fetch(`/api/planner/execute/${planId}`, {
+    method: "POST",
+    headers: { Authorization: "Bearer " + getToken() },
+  });
+  const j = await res.json();
+  showToast(j.message || "Requested execution");
+}
+</script>
+</body></html>

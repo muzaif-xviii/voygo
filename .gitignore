@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Databases
+voygo.db
+backend/voygo.db
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# System & IDE files
+.DS_Store
+.vscode/
+archive/

@@ -1,0 +1,43 @@
+<!doctype html><html><head><meta charset="utf-8"/><title>Hotels — VoyGo</title><link rel="stylesheet" href="css/styles.css"/><script src="js/main.js" defer></script><script src="js/search.js" defer></script><script src="js/bookings.js" defer></script></head>
+<body>
+<div class="container">
+<header class="header">
+  <a class="brand" href="index.html">
+    <div class="logo">V</div>
+    <div>
+      <strong>VoyGo</strong>
+      <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
+    </div>
+  </a>
+  <nav class="nav"></nav>
+</header>
+
+<div class="card">
+  <h3>Search hotels</h3>
+  <form onsubmit="event.preventDefault(); s()">
+    <div class="form-row">
+      <input class="input" name="city" id="city" placeholder="City" required>
+      <input class="input" name="checkin" type="date" required>
+    </div>
+    <div style="margin-top:10px"><button class="btn">Search</button></div>
+  </form>
+  <div id="hot-results" style="margin-top:12px"></div>
+</div>
+
+<script>
+async function s(){
+  const city = document.getElementById('city').value;
+  document.getElementById('hot-results').textContent='Searching...';
+  const res = await fetch(`/api/search/hotels?city=${encodeURIComponent(city)}`);
+  const data = await res.json();
+  document.getElementById('hot-results').innerHTML = data.map(h => 
+    `<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between"><div><strong>${h.name}</strong><div style="color:var(--muted)">${h.stars}★ • ${h.location}</div></div><div>₹${h.price}</div></div><div style="margin-top:8px"><button class="btn" onclick='bookHotel(${JSON.stringify(JSON.stringify(h))})'>Book</button></div></div>`).join('');
+}
+async function bookHotel(encoded){
+  const h = JSON.parse(encoded);
+  if(!getToken()){ showToast('Login to book','error'); location='login.html'; return; }
+  const res = await createBooking({type:'hotel', item:h.name, price:h.price, details:h});
+  if(res.error) showToast(res.error,'error'); else { showToast('Booked hotel!'); location='dashboard.html' }
+}
+</script>
+</div></body></html>

@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset="utf-8"/><title>Flights — VoyGo</title><link rel="stylesheet" href="css/styles.css"/><script src="js/main.js" defer></script><script src="js/search.js" defer></script><script src="js/bookings.js" defer></script></head>
+<body>
+<div class="container">
+  <header class="header">
+  <a class="brand" href="index.html">
+    <div class="logo">V</div>
+    <div>
+      <strong>VoyGo</strong>
+      <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
+    </div>
+  </a>
+  <nav class="nav"></nav>
+  </header>
+
+
+  <div class="card">
+    <h3>Search flights</h3>
+    <form id="flight-form" onsubmit="event.preventDefault(); doSearch()">
+      <div class="form-row">
+        <input class="input" name="from" placeholder="From" required>
+        <input class="input" name="to" placeholder="To" required>
+      </div>
+      <div class="form-row" style="margin-top:8px">
+        <input class="input" name="depart" type="date" required>
+        <input class="input" name="return" type="date">
+      </div>
+      <div style="margin-top:10px"><button class="btn">Search</button></div>
+    </form>
+    <div id="results" style="margin-top:12px"></div>
+  </div>
+
+  <script>
+    async function doSearch(){
+      const form = document.getElementById('flight-form');
+      const q = Object.fromEntries(new FormData(form));
+      document.getElementById('results').textContent = 'Searching...';
+      const data = await fetch(`/api/search/flights?from=${encodeURIComponent(q.from)}&to=${encodeURIComponent(q.to)}&depart=${q.depart}`);
+      const json = await data.json();
+      document.getElementById('results').innerHTML = json.map(f => 
+        `<div class="card" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>${f.airline}</strong> ${f.flight_no} • ${f.duration}</div>
+            <div>₹${f.price}</div>
+          </div>
+          <div style="margin-top:6px"><button class="btn" onclick="book('${encodeURIComponent(JSON.stringify(f))}')">Book</button></div>
+        </div>`).join('');
+    }
+    async function book(encoded){
+      const f = JSON.parse(decodeURIComponent(encoded));
+      const token = getToken();
+      if(!token){ showToast('Please login to book','error'); window.location='login.html'; return; }
+      const res = await createBooking({type:'flight', item: f.airline+' '+f.flight_no, price: f.price, details: f});
+      if(res.error) showToast(res.error,'error'); else { showToast('Booked!'); location='dashboard.html' }
+    }
+  </script>
+</div>
+</body></html>

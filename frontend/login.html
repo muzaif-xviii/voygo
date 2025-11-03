@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><title>Login — VoyGo</title><link rel="stylesheet" href="css/styles.css"/><script src="js/main.js" defer></script><script src="js/auth.js" defer></script></head>
+<body>
+<div class="container">
+  <header class="header"><a class="brand" href="index.html"><div class="logo">V</div><div><strong>VoyGo</strong></div></a></header>
+  <div class="card" style="max-width:520px;margin:auto">
+    <h2>Login</h2>
+    <form onsubmit="event.preventDefault(); login(this)">
+      <div class="form-row"><input class="input" name="email" type="email" placeholder="Email" required></div>
+      <div class="form-row" style="margin-top:8px"><input class="input" name="password" type="password" placeholder="Password" required></div>
+      <div style="margin-top:12px"><button class="btn">Login</button> <a href="signup.html" class="btn ghost">Sign up</a></div>
+    </form>
+    <p style="margin-top:8px;color:var(--muted)">Demo: demo@voygo.test / pass123</p>
+  </div>
+</div>
+</body></html>

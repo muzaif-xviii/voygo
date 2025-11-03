@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Budgeting — VoyGo</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="js/main.js" defer></script>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <a class="brand" href="index.html">
+      <div class="logo">V</div>
+      <div>
+        <strong>VoyGo</strong>
+        <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
+      </div>
+    </a>
+    <nav class="nav"></nav>
+  </header>
+
+  <div class="card">
+    <h3>Budget Planner (Premium)</h3>
+    <p style="color:var(--muted)">Set a savings target and track your progress automatically.</p>
+    
+    <form onsubmit="event.preventDefault(); setBudget()">
+      <div class="form-row">
+        <input class="input" id="budget" type="number" placeholder="Target amount (₹)" required>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn">Set Budget</button>
+      </div>
+    </form>
+
+    <div id="budget-status" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<script>
+async function setBudget() {
+  if (!getToken()) {
+    showToast('Login to use budgeting', 'error');
+    location = 'login.html';
+    return;
+  }
+
+  const amount = document.getElementById('budget').value;
+  if (!amount || amount <= 0) {
+    showToast('Enter a valid budget amount', 'error');
+    return;
+  }
+
+  document.getElementById('budget-status').innerHTML = '<p>⏳ Setting your budget...</p>';
+
+  const res = await fetch('/api/budget', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getToken()
+    },
+    body: JSON.stringify({ target: Number(amount) })
+  });
+
+  const j = await res.json();
+
+  if (!res.ok) {
+    showToast(j.message || 'Error setting budget', 'error');
+    document.getElementById('budget-status').innerHTML = `<p style="color:red;">${j.error || 'Error'}</p>`;
+    return;
+  }
+
+  showToast('✅ Budget set successfully!');
+  document.getElementById('budget-status').innerHTML = `
+    <div class="card" style="margin-top:10px;">
+      <h4>🎯 Your Current Budget</h4>
+      <p><strong>Target:</strong> ₹${j.target.toLocaleString()}</p>
+      <p><strong>Saved:</strong> ₹${j.saved ? j.saved.toLocaleString() : 0}</p>
+      <p style="color:var(--muted);font-size:0.9em;">You’ll be notified when you reach your savings goal.</p>
+    </div>
+  `;
+}
+
+/* ✅ Load existing budget on page load */
+(async function loadBudget() {
+  if (!getToken()) return;
+  try {
+    const res = await fetch('/api/budget', {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    const j = await res.json();
+    if (j && j.target) {
+      document.getElementById('budget-status').innerHTML = `
+        <div class="card" style="margin-top:10px;">
+          <h4>🎯 Your Current Budget</h4>
+          <p><strong>Target:</strong> ₹${j.target.toLocaleString()}</p>
+          <p><strong>Saved:</strong> ₹${j.saved ? j.saved.toLocaleString() : 0}</p>
+        </div>
+      `;
+    }
+  } catch (e) {
+    console.warn('No existing budget found');
+  }
+})();
+</script>
+
+<script src="js/auth.js"></script>
+<script>checkAuth();</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>VoyGo — AI Travel Assistant</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="js/main.js" defer></script>
+</head>
+
+<body>
+  <div class="container">
+    <header class="header">
+  <a class="brand" href="index.html">
+    <div class="logo">V</div>
+    <div>
+      <strong>VoyGo</strong>
+      <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
+    </div>
+  </a>
+  <nav class="nav"></nav>
+</header>
+
+
+    <section class="hero card">
+      <div style="flex:1">
+        <h1 style="margin:0">Plan smarter trips, save more.</h1>
+        <p style="color:var(--muted)">VoyGo helps you find flights, hotels, cabs — and automate bookings with smart budgeting.</p>
+        <div style="margin-top:12px">
+          <a href="signup.html" class="btn">Get Started — Free</a>
+        </div>
+      </div>
+      <div style="width:360px">
+        <div class="card">
+          <form id="quick-search" onsubmit="event.preventDefault(); location='flights.html'">
+            <div class="form-row">
+              <input class="input" name="from" placeholder="From (city)" />
+              <input class="input" name="to" placeholder="To (city)" />
+            </div>
+            <div class="form-row" style="margin-top:8px">
+              <input class="input" name="depart" type="date"/>
+              <select class="input" name="cab">
+                <option value="">Need cab?</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            <div style="margin-top:10px">
+              <button class="btn" onclick="location='flights.html'">Search</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid" style="margin-top:18px">
+      <div class="card">
+        <h3>Why VoyGo</h3>
+        <p class="muted">AI-powered planning, budget automation, real-time pricing alerts, one-tap bookings.</p>
+      </div>
+      <div class="card">
+        <h3>Premium features</h3>
+        <ul>
+          <li>AI Planner</li>
+          <li>Auto-booking with permission</li>
+          <li>Realtime deal alerts</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>For businesses</h3>
+        <p class="muted">Corporate travel and analytics (future).</p>
+      </div>
+    </div>
+
+    <footer class="footer">VoyGo • AI travel assistant • A startup initiation • © 2025</footer>
+  </div>
+</body>
+</html>
