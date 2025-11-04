@@ -1,15 +1,87 @@
-<!doctype html><html><head><meta charset="utf-8"/><title>Signup — VoyGo</title><link rel="stylesheet" href="css/styles.css"/><script src="js/auth.js" defer></script><script src="js/main.js" defer></script></head>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Signup — VoyGo</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="js/main.js" defer></script>
+</head>
 <body>
 <div class="container">
-  <header class="header"><a class="brand" href="index.html"><div class="logo">V</div><div><strong>VoyGo</strong></div></a></header>
+  <header class="header">
+    <a class="brand" href="index.html">
+      <div class="logo">V</div>
+      <div><strong>VoyGo</strong></div>
+    </a>
+  </header>
+
   <div class="card" style="max-width:560px;margin:auto">
-    <h2>Create account</h2>
-    <form onsubmit="event.preventDefault(); signup(this)">
-      <div class="form-row"><input class="input" name="name" placeholder="Full name" required></div>
-      <div class="form-row" style="margin-top:8px"><input class="input" name="email" type="email" placeholder="Email" required></div>
-      <div class="form-row" style="margin-top:8px"><input class="input" name="password" type="password" placeholder="Password" required></div>
-      <div style="margin-top:12px"><button class="btn">Sign up</button> <a class="btn ghost" href="login.html">Have an account?</a></div>
+    <h2>Create Account</h2>
+
+    <!-- Step 1: Signup form -->
+    <form id="signup-form" onsubmit="event.preventDefault(); sendOTP()">
+      <div class="form-row"><input class="input" id="name" placeholder="Full name" required></div>
+      <div class="form-row" style="margin-top:8px"><input class="input" id="email" type="email" placeholder="Email" required></div>
+      <div class="form-row" style="margin-top:8px"><input class="input" id="password" type="password" placeholder="Password" required></div>
+      <div style="margin-top:12px">
+        <button class="btn" type="submit">Send OTP</button>
+        <a class="btn ghost" href="login.html">Have an account?</a>
+      </div>
+    </form>
+
+    <!-- Step 2: OTP verification form -->
+    <form id="otp-form" style="display:none; margin-top:16px;" onsubmit="event.preventDefault(); verifyOTP()">
+      <h3>Verify Email</h3>
+      <p style="color:var(--muted)">An OTP has been sent to your email.</p>
+      <div class="form-row"><input class="input" id="otp" placeholder="Enter 6-digit OTP" required></div>
+      <div style="margin-top:12px"><button class="btn" type="submit">Verify & Create Account</button></div>
     </form>
   </div>
 </div>
-</body></html>
+
+<script>
+async function sendOTP() {
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  try {
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Failed to send OTP");
+    showToast("OTP sent to your email!", "info");
+
+    document.getElementById("signup-form").style.display = "none";
+    document.getElementById("otp-form").style.display = "block";
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+}
+
+async function verifyOTP() {
+  const email = document.getElementById("email").value;
+  const otp = document.getElementById("otp").value;
+
+  try {
+    const res = await fetch("/api/auth/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "OTP verification failed");
+    showToast("Account created successfully! You can now log in.", "info");
+    setTimeout(() => (window.location = "login.html"), 1500);
+  } catch (err) {
+    showToast(err.message, "error");
+  }
+}
+</script>
+</body>
+</html>
