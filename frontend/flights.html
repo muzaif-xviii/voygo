@@ -1,57 +1,155 @@
-<!doctype html><html><head><meta charset="utf-8"/><title>Flights — VoyGo</title><link rel="stylesheet" href="css/styles.css"/><script src="js/main.js" defer></script><script src="js/search.js" defer></script><script src="js/bookings.js" defer></script></head>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Flights — VoyGo</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="js/main.js" defer></script>
+</head>
+
 <body>
 <div class="container">
   <header class="header">
-  <a class="brand" href="index.html">
-    <div class="logo">V</div>
-    <div>
-      <strong>VoyGo</strong>
-      <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
-    </div>
-  </a>
-  <nav class="nav"></nav>
+    <a class="brand" href="index.html">
+      <div class="logo">V</div>
+      <div>
+        <strong>VoyGo</strong>
+        <div style="font-size:12px;color:var(--muted)">AI Travel & Budgeting</div>
+      </div>
+    </a>
+    <nav class="nav"></nav>
   </header>
-
 
   <div class="card">
     <h3>Search flights</h3>
-    <form id="flight-form" onsubmit="event.preventDefault(); doSearch()">
+    <form id="flight-form" onsubmit="event.preventDefault(); searchFlights()">
       <div class="form-row">
-        <input class="input" name="from" placeholder="From" required>
-        <input class="input" name="to" placeholder="To" required>
+        <div class="autocomplete-container">
+          <input class="input" id="from" placeholder="From (e.g. Delhi or LHR)" required autocomplete="off">
+          <div id="from-list" class="autocomplete-list" style="display:none;"></div>
+        </div>
+        <div class="autocomplete-container">
+          <input class="input" id="to" placeholder="To (e.g. Riyadh or JFK)" required autocomplete="off">
+          <div id="to-list" class="autocomplete-list" style="display:none;"></div>
+        </div>
       </div>
+
       <div class="form-row" style="margin-top:8px">
-        <input class="input" name="depart" type="date" required>
-        <input class="input" name="return" type="date">
+        <input class="input" id="depart" type="date" required>
+        <input class="input" id="return" type="date" placeholder="Return (optional)">
       </div>
-      <div style="margin-top:10px"><button class="btn">Search</button></div>
+
+      <div style="margin-top:10px">
+        <button class="btn">Search</button>
+      </div>
     </form>
+
     <div id="results" style="margin-top:12px"></div>
   </div>
-
-  <script>
-    async function doSearch(){
-      const form = document.getElementById('flight-form');
-      const q = Object.fromEntries(new FormData(form));
-      document.getElementById('results').textContent = 'Searching...';
-      const data = await fetch(`/api/search/flights?from=${encodeURIComponent(q.from)}&to=${encodeURIComponent(q.to)}&depart=${q.depart}`);
-      const json = await data.json();
-      document.getElementById('results').innerHTML = json.map(f => 
-        `<div class="card" style="margin-bottom:8px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><strong>${f.airline}</strong> ${f.flight_no} • ${f.duration}</div>
-            <div>₹${f.price}</div>
-          </div>
-          <div style="margin-top:6px"><button class="btn" onclick="book('${encodeURIComponent(JSON.stringify(f))}')">Book</button></div>
-        </div>`).join('');
-    }
-    async function book(encoded){
-      const f = JSON.parse(decodeURIComponent(encoded));
-      const token = getToken();
-      if(!token){ showToast('Please login to book','error'); window.location='login.html'; return; }
-      const res = await createBooking({type:'flight', item: f.airline+' '+f.flight_no, price: f.price, details: f});
-      if(res.error) showToast(res.error,'error'); else { showToast('Booked!'); location='dashboard.html' }
-    }
-  </script>
 </div>
-</body></html>
+
+<script>
+let airportCache = {};
+
+async function fetchAirports(inputId, listId) {
+  const query = document.getElementById(inputId).value.trim();
+  const list = document.getElementById(listId);
+
+  if (query.length < 3) {
+    list.style.display = "none";
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/search/airports?keyword=${query}`);
+    const data = await res.json();
+
+    airportCache[inputId] = data; // 🧠 Cache last results for auto-complete fallback
+
+    if (!data.length) {
+      list.style.display = "none";
+      return;
+    }
+
+    list.innerHTML = data.map(a => `
+      <div class="autocomplete-item" onclick="selectAirport('${inputId}', '${a.iataCode}', '${a.city || a.name}')">
+        ${a.city || a.name} – ${a.iataCode} (${a.country})
+      </div>
+    `).join("");
+    list.style.display = "block";
+  } catch (err) {
+    console.error("Autocomplete error:", err);
+  }
+}
+
+function selectAirport(inputId, code, cityName) {
+  const input = document.getElementById(inputId);
+  input.value = code;
+  input.dataset.label = cityName;
+  document.getElementById(inputId + "-list").style.display = "none";
+}
+
+async function resolveCityToAirport(city) {
+  try {
+    const res = await fetch(`/api/search/airports?keyword=${city}`);
+    const data = await res.json();
+    if (data.length > 0) return data[0].iataCode; // Return top match
+    return city; // fallback
+  } catch {
+    return city;
+  }
+}
+
+async function searchFlights() {
+  let from = document.getElementById("from").value.trim();
+  let to = document.getElementById("to").value.trim();
+  const depart = document.getElementById("depart").value;
+  const returnDate = document.getElementById("return").value;
+
+  if (!from || !to || !depart) {
+    showToast("Please fill all required fields", "error");
+    return;
+  }
+
+  document.getElementById("results").innerHTML = "✈️ Searching flights...";
+
+  // 🧠 Auto-resolve city names to airport codes
+  if (from.length > 3) from = await resolveCityToAirport(from);
+  if (to.length > 3) to = await resolveCityToAirport(to);
+
+  try {
+    const url = `/api/search/flights?from=${from}&to=${to}&depart=${depart}${returnDate ? `&returnDate=${returnDate}` : ""}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Failed to fetch flights");
+
+    if (!data.length) {
+      document.getElementById("results").innerHTML = "No flights found.";
+      return;
+    }
+
+    document.getElementById("results").innerHTML = data.map(f => `
+      <div class="card" style="margin-top:8px">
+        <strong>${f.airline}</strong> — ${f.from} → ${f.to}<br>
+        Duration: ${f.duration}<br>
+        Price: ${f.price}<br>
+        <button class="btn" onclick="bookFlight('${f.airline}','${f.from}','${f.to}','${f.price}')">Book</button>
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error(err);
+    showToast(err.message, "error");
+    document.getElementById("results").innerHTML = "⚠️ Error fetching flights.";
+  }
+}
+
+function bookFlight(airline, from, to, price) {
+  showToast(`Booked ${airline} flight ${from} → ${to} (${price})`, "info");
+}
+
+document.getElementById("from").addEventListener("input", () => fetchAirports("from", "from-list"));
+document.getElementById("to").addEventListener("input", () => fetchAirports("to", "to-list"));
+</script>
+</body>
+</html>
