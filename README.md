@@ -3,7 +3,7 @@
 VoyGo is a simple full-stack travel planning demo built with **Node.js + Express + SQLite** and a plain **HTML/CSS/JS frontend**.
 
 ## Features:
-- Login & Signup (JWT Auth)
+- Login & Signup (JWT auth and BREVO API)
 - AI Trip Planner (Google Gemini)
 - Budget Tracker
 - Real-time flight/hotel price simulation
