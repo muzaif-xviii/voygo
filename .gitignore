@@ -4,7 +4,6 @@ node_modules/
 # Databases
 voygo.db
 backend/voygo.db
-backend/data/airports.json
 
 # Environment variables
 .env

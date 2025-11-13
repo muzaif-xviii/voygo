@@ -1,12 +1,16 @@
 import express from "express";
 import Amadeus from "amadeus";
 import fs from "fs";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 dotenv.config();
 const router = express.Router();
 
-const airportData = JSON.parse(fs.readFileSync("./data/airports.json", "utf8"));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const airportDataPath = path.join(__dirname, "../data/airports.json");
+const airportData = JSON.parse(fs.readFileSync(airportDataPath, "utf8"));
 
 // ✅ initialize Amadeus with .env values
 const amadeus = new Amadeus({
